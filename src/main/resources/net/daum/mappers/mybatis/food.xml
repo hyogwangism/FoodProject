@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="food">
+
+	<!-- Food_main -->  	<!-- Food_main -->  	<!-- Food_main -->  	<!-- Food_main -->  	<!-- Food_main -->
+
+	<select id="new" resultType="java.util.Map"
+		parameterType="java.util.Map">
+		SELECT restaurant_name, food_name, region_name, photo_url, type_name,
+		navi_no, COALESCE(like_cnt, 0) as like_cnt
+		FROM (
+		SELECT n.navi_no, r.restaurant_name, f.food_name, re.region_name,
+		p.photo_url,
+		t.type_name, i.like_cnt, ROWNUM AS rNum
+		FROM t_navi n
+		JOIN t_restaurant r ON n.navi_restaurant_no = r.restaurant_no
+		JOIN t_food f ON n.navi_food_no = f.food_no
+		JOIN t_region re ON n.navi_region_no = re.region_no
+		JOIN t_photo p ON n.navi_food_no = p.photo_food_no
+		JOIN t_type t ON n.navi_type_no = t.type_no
+		LEFT JOIN (
+		SELECT like_navi_no, COUNT(*) AS like_cnt
+		FROM t_like
+		GROUP BY like_navi_no
+		) i ON n.navi_no = i.like_navi_no
+
+		<where>
+			<!-- 이 부분은 조건식이 없을 때 사용됩니다. -->
+			<if test="food_type == 'All' || food_type == null"></if>
+			<!-- 이 부분은 food_type 조건이 있는 경우 사용됩니다. -->
+			<if test="food_type != null and food_type != 'All'">
+				AND t.type_name = #{food_type}
+			</if>
+			<!-- 이 부분은 search_type이 'All'이고 search_field가 존재하는 경우 사용됩니다. -->
+			<if
+				test="search_type == 'All' and search_field != null and search_field != ''">
+				AND (r.restaurant_name LIKE '%' || #{search_field} || '%' OR
+				f.food_name LIKE '%' || #{search_field} || '%')
+			</if>
+			<!-- 이 부분은 search_type이 'food_place'이고 search_field가 존재하는 경우 사용됩니다. -->
+			<if
+				test="search_type == 'food_place' and search_field != null and search_field != ''">
+				AND re.region_name LIKE '%' || #{search_field} || '%'
+			</if>
+			<!-- 이 부분은 search_type이 'food_name'이고 search_field가 존재하는 경우 사용됩니다. -->
+			<if
+				test="search_type == 'food_name' and search_field != null and search_field != ''">
+				AND f.food_name LIKE '%' || #{search_field} || '%'
+			</if>
+			<!-- 이 부분은 list1이 존재하고 크기가 0보다 큰 경우 사용됩니다. -->
+			<if test="list1 != null and list1.size() > 0">
+				AND t.type_name IN (
+				<foreach collection="list1" item="item" separator=","
+					close=")">
+					#{item}
+				</foreach>
+
+			</if>
+			<!-- 이 부분은 list2가 존재하고 크기가 0보다 큰 경우 사용됩니다. -->
+			<if test="list2 != null and list2.size() > 0">
+				AND re.region_name IN (
+				<foreach collection="list2" item="item" separator=","
+					close=")">
+					#{item}
+				</foreach>
+
+			</if>
+		</where>
+		ORDER BY rNum
+		)
+		WHERE rNum &gt;= #{startrow} AND rNum &lt;= #{endrow}
+	</select>
+
+
+	<!-- 카운트 -->
+	<select id="count" resultType="java.lang.Integer"
+		parameterType="java.util.Map">
+		SELECT COUNT(*) AS count
+		FROM t_navi n
+		JOIN t_restaurant r ON
+		n.navi_restaurant_no = r.restaurant_no
+		JOIN t_food f ON n.navi_food_no
+		= f.food_no
+		JOIN t_region re ON n.navi_region_no = re.region_no
+		JOIN
+		t_photo p ON n.navi_food_no = p.photo_food_no
+		JOIN t_type t ON
+		n.navi_type_no = t.type_no
+		<where>
+			<if test="food_type != null and food_type != 'All'">
+				t.type_name = #{food_type}
+			</if>
+			<if test="food_type == 'All' || food_type == null">
+
+			</if>
+			<if
+				test="search_type == 'All' and search_field != null and search_field != ''">
+				AND (r.restaurant_name LIKE '%' || #{search_field} || '%' OR
+				f.food_name LIKE '%' || #{search_field} || '%')
+			</if>
+			<if
+				test="search_type == 'food_place' and search_field != null and search_field != ''">
+				AND re.region_name LIKE '%' || #{search_field} || '%'
+			</if>
+			<if
+				test="search_type == 'food_name' and search_field != null and search_field != ''">
+				AND f.food_name LIKE '%' || #{search_field} || '%'
+			</if>
+			<if test="list1 != null and list1.size() > 0">
+				AND t.type_name IN (
+				<foreach collection="list1" item="item" separator=","
+					close=")">
+					#{item}
+				</foreach>
+
+			</if>
+			<if test="list2 != null and list2.size() > 0">
+				AND re.region_name IN (
+				<foreach collection="list2" item="item" separator=","
+					close=")">
+					#{item}
+				</foreach>
+
+			</if>
+		</where>
+	</select>
+
+
+
+	<!-- 전체 목록 -->
+	<select id="food_all_list" resultType="java.util.Map">
+		SELECT restaurant_name, food_name, region_name, photo_url, type_name,
+		navi_no, COALESCE(like_cnt, 0) as like_cnt
+		FROM (
+		SELECT n.navi_no, r.restaurant_name, f.food_name, re.region_name,
+		p.photo_url,
+		t.type_name, ROWNUM AS rNum, l.like_cnt
+		FROM t_navi n
+		JOIN t_restaurant r ON n.navi_restaurant_no = r.restaurant_no
+		JOIN t_food f ON n.navi_food_no = f.food_no
+		JOIN t_region re ON n.navi_region_no = re.region_no
+		JOIN t_photo p ON n.navi_food_no = p.photo_food_no
+		JOIN t_type t ON n.navi_type_no = t.type_no
+		LEFT JOIN (
+		SELECT like_navi_no, COUNT(*) AS like_cnt
+		FROM t_like
+		GROUP BY like_navi_no
+		) l ON n.navi_no = l.like_navi_no
+		WHERE ROWNUM &lt;= 10
+		)
+		WHERE rNum &gt;= 1
+	</select>
+
+	<!-- 상세보기 페이지 -->
+	<select id="food_cont" resultType="foodNavi">
+		SELECT r.restaurant_name, f.food_name, re.region_name, p.photo_url,
+		t.type_name, n.navi_no, r.restaurant_review, pr.price_won
+		FROM t_navi n
+		JOIN t_restaurant r ON n.navi_restaurant_no = r.restaurant_no
+		JOIN t_food f ON n.navi_food_no = f.food_no
+		JOIN t_region re ON n.navi_region_no = re.region_no
+		JOIN t_photo p ON n.navi_food_no = p.photo_food_no
+		JOIN t_type t ON n.navi_type_no = t.type_no
+		JOIN t_price pr ON pr.price_food_no = f.food_no
+		WHERE n.navi_no =#{navi_no}
+	</select>
+
+
+	<!-- <select id="items" resultType="net.daum.vo.FoodVO"> SELECT * FROM Food 
+		<where> <if test="list.size != 0"> AND ( <if test="list.food_type.size != 
+		0"> <foreach collection="list" item="item" open="food_type IN (" separator="," 
+		close=")"> #{item.food_type} </foreach> </if> <if test="list.food_location.size 
+		!= 0"> AND <foreach collection="list" item="item" open="food_location IN 
+		(" separator="," close=")"> #{item.food_location} </foreach> </if> ) </if> 
+		</where> </select> -->
+
+
+	<!-- 1.SELECT * FROM Food 2.SELECT * FROM Food WHERE (price IN (10000,15000,20000)) 
+		3.SELECT * FROM Food WHERE (price IN (10000,15000,20000)) AND kind = 'Korean' -->
+
+	<!-- 찜하기 --><!-- 찜하기 --><!-- 찜하기 --><!-- 찜하기 --><!-- 찜하기 --><!-- 찜하기 --><!-- 찜하기 --><!-- 찜하기 --><!-- 찜하기 -->
+
+	<!-- 찜하기 눌럿는지 안눌럿는지 카운트 -->
+	<select id="like_count" resultType="int">
+		select count(*) from t_like
+		where like_navi_no = #{like_navi_no} and like_member_id =
+		#{session_id}
+	</select>
+
+	<!-- 찜하기 -->
+	<insert id="likeUp">
+		insert into t_like (like_no, like_navi_no,
+		like_member_id, like_cnt)
+		values(like_no_seq.nextval, #{like_navi_no},
+		#{session_id}, 1)
+	</insert>
+
+	<!-- 찜하기 취소 -->
+	<delete id="likeDown">
+		delete from t_like where like_navi_no =
+		#{like_navi_no} and like_member_id = #{session_id}
+	</delete>
+
+<select id="likelist" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT r.restaurant_name, f.food_name, re.region_name, p.photo_url, t.type_name
+FROM t_like l
+JOIN t_navi n ON l.like_navi_no = n.navi_no
+JOIN t_restaurant r ON n.navi_restaurant_no = r.restaurant_no
+JOIN t_food f ON n.navi_food_no = f.food_no
+JOIN t_region re ON n.navi_region_no = re.region_no
+JOIN t_photo p ON n.navi_food_no = p.photo_food_no
+JOIN t_type t ON n.navi_type_no = t.type_no
+JOIN t_member m ON l.like_member_id = m.user_id
+WHERE m.user_id = '${session_id}'
+	</select>
+
+
+	<!-- 댓글 --><!-- 댓글 --><!-- 댓글 --><!-- 댓글 --><!-- 댓글 --><!-- 댓글 --><!-- 댓글 --><!-- 댓글 --><!-- 댓글 --><!-- 댓글 -->
+	
+	<!-- 댓글 작성 -->
+	<insert id="insert_comment">
+		insert into t_comments values(comment_no_seq.nextval, #{comment_navi_no},
+		#{session_id}, #{inputComment}, sysdate)
+	</insert>
+
+	<!-- 댓글 목록 조회  -->
+	<select id="comment_list" resultType="foodComment">
+    SELECT *
+    FROM (
+        SELECT comment_no, comment_navi_no, user_id, contents, comment_date, ROWNUM AS rNum
+        FROM (
+            SELECT *
+            FROM t_comments
+            WHERE comment_navi_no = #{NAVI_NO}
+            ORDER BY comment_no
+        )
+    )
+    WHERE rNum &gt;= #{startrow} AND rNum &lt;= #{endrow}
+	</select>
+	
+	<!-- 댓글 개수  -->
+	<select id="comment_count" resultType="java.lang.Integer">
+	select count(comment_no) from t_comments where comment_navi_no = #{NAVI_NO}
+	</select>
+	
+	<!-- 댓글 삭제  -->
+	<delete id="comment_del">
+		delete from t_comments where comment_no = #{comment_no}
+	</delete>
+
+	<!-- 관리자 식당 음식 등 관리 --><!-- 관리자 식당 음식 등 관리 --><!-- 관리자 식당 음식 등 관리 --><!-- 관리자 식당 음식 등 관리 --><!-- 관리자 식당 음식 등 관리 -->
+	<!--  -->
+	<insert id="insertTable" parameterType="java.util.Map">
+		INSERT INTO ${table}
+		VALUES (${seq}, '${name}')
+	</insert>
+
+	<insert id="insertRest" parameterType="java.util.Map">
+		INSERT INTO t_restaurant
+		VALUES (restaurant_no_seq.nextval, '${restaurant_name}',
+		'${restaurant_review}')
+	</insert>
+
+	<select id="selectFood" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		select * from t_food order by food_no asc
+	</select>
+
+	<select id="selectRest" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		select * from t_restaurant order by restaurant_no asc
+	</select>
+
+	<select id="selectRegion" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		select * from t_region order by region_no asc
+	</select>
+
+	<select id="selectType" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		select * from t_type order by type_no asc
+	</select>
+
+	<select id="selectNavi" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT n.navi_no,r.restaurant_name, f.food_name,
+		re.region_name, t.type_name
+		FROM t_navi n
+		JOIN t_food f ON n.navi_food_no = f.food_no
+		JOIN t_restaurant r ON n.navi_restaurant_no = r.restaurant_no
+		JOIN t_region re ON n.navi_region_no = re.region_no
+		JOIN t_type t ON n.navi_type_no = t.type_no
+		order by navi_no asc
+	</select>
+
+	<select id="selectPriceUrl" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT t_food.food_no, t_food.food_name, t_price.price_won,
+		t_photo.photo_url
+		FROM t_food
+		JOIN t_price ON t_food.food_no = t_price.price_food_no
+		JOIN t_photo ON t_food.food_no = t_photo.photo_food_no
+		order by food_no asc
+	</select>
+
+	<select id="selectNoPrice" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT t_food.food_no,t_food.food_name
+		FROM t_food
+		LEFT JOIN t_price ON t_food.food_no = t_price.price_food_no
+		WHERE t_price.price_won IS NULL
+		order by food_no asc
+	</select>
+
+	<select id="selectNoUrl" parameterType="java.util.Map"
+		resultType="java.util.Map">
+		SELECT t_food.food_no,t_food.food_name
+		FROM t_food
+		LEFT JOIN t_photo ON t_food.food_no = t_photo.photo_food_no
+		WHERE t_photo.photo_url IS NULL
+		order by food_no asc
+	</select>
+
+	<insert id="insertNavi" parameterType="java.util.Map">
+		INSERT INTO t_navi
+		VALUES
+		(navi_no_seq.nextval, '${foodCheckbox}',
+		'${regionCheckbox}','${restCheckbox}','${typeCheckbox}')
+	</insert>
+
+	<insert id="insertPrice" parameterType="java.util.Map">
+		INSERT INTO t_price
+		VALUES (price_no_seq.nextval, '${price}',
+		'${priceCheckbox}')
+	</insert>
+
+
+	<insert id="insertPhoto" parameterType="java.util.Map">
+		INSERT INTO t_photo
+		VALUES (photo_no_seq.nextval, '${photo_name}',
+		'${photo_url}','${photo_type}','${photoCheckbox}')
+	</insert>
+	
+		<update id="deleteTable" parameterType="java.util.Map">
+		update ${table} set ${status} = 1 where ${no}=${deleteCheckbox}
+	</update>
+</mapper>
+

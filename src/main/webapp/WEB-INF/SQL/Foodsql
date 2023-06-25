@@ -1,0 +1,319 @@
+SELECT r.restaurant_name, f.food_name, re.region_name, p.photo_url, t.type_name
+FROM t_navi n
+JOIN t_restaurant r ON n.navi_restaurant_no = r.restaurant_no
+JOIN t_food f ON n.navi_food_no = f.food_no
+JOIN t_region re ON n.navi_region_no = re.region_no
+JOIN t_type t ON n.navi_type_no = t.type_no
+JOIN t_photo p ON n.navi_food_no = p.photo_food_no;
+
+commit;
+
+  SELECT restaurant_name, food_name, region_name, photo_url, type_name, navi_no, like_count
+  FROM (
+    SELECT r.restaurant_name, f.food_name, re.region_name, p.photo_url, t.type_name, n.navi_no, ROWNUM AS rNum
+    FROM t_navi n
+    JOIN t_restaurant r ON n.navi_restaurant_no = r.restaurant_no
+    JOIN t_food f ON n.navi_food_no = f.food_no
+    JOIN t_region re ON n.navi_region_no = re.region_no
+    JOIN t_photo p ON n.navi_food_no = p.photo_food_no
+    JOIN t_type t ON n.navi_type_no = t.type_no
+  ) n
+  LEFT JOIN (
+    SELECT like_navi_no, COUNT(*) AS like_count
+    FROM t_like
+    GROUP BY like_navi_no
+  ) l ON n.navi_no = l.like_navi_no;
+  
+
+insert into t_navi values(navi_no_seq.nextval, 1, 1, 1, 1);
+insert into t_navi values(navi_no_seq.nextval, 2, 2, 2, 2);
+insert into t_navi values(navi_no_seq.nextval, 3, 3, 3, 3);
+insert into t_navi values(navi_no_seq.nextval, 4, 4, 4, 4);
+insert into t_navi values(navi_no_seq.nextval, 5, 5, 5, 5);
+
+
+
+
+SELECT * FROM food where  food_type IN ('한식') and food_place LIKE '%%';
+
+--Navi 관련 테이블
+
+create table t_navi(
+  navi_no number(38) primary key, --음식 항목 번호
+  navi_food_no NUMBER(38) REFERENCES t_food(food_no) ,
+  navi_region_no NUMBER(38) REFERENCES t_region(region_no) ,
+  navi_restaurant_no NUMBER(38) REFERENCES t_restaurant(restaurant_no) ,
+  navi_type_no NUMBER(38) REFERENCES t_type(type_no),
+  navi_price_no NUMBER(38) REFERENCES t_price(price_no),
+ );     
+ 
+UPDATE t_navi
+SET navi_food_no = NULL, navi_region_no=null, navi_restaurant_no=null, navi_type_no=null, navi_price_no=null
+WHERE navi_no = 1;
+
+select* from t_navi;
+
+rollback;
+
+delete from t_navi where navi_no=1 cascade constraints;
+
+ALTER TABLE t_navi DROP COLUMN navi_like_no;
+
+
+select* from t_navi;
+
+
+commit;
+
+select * from t_navi; 
+
+/*Navi 항목 번호 시퀀스*/
+ create sequence navi_no_seq
+ start with 1
+ increment by 1
+ nocache;
+
+/*음식 관련 테이블*/ 
+ create table t_food(
+  food_no number(38) primary key, --음식 항목 번호
+  food_name varchar2(50) not null --음식명
+ );     
+
+select * from t_food;
+ 
+insert into t_food values(food_no_seq.nextval, '고기짬뽕');
+insert into t_food values(food_no_seq.nextval, '쭈꾸미볶음');
+insert into t_food values(food_no_seq.nextval, '우유크림도넛');
+insert into t_food values(food_no_seq.nextval, '동파육');
+insert into t_food values(food_no_seq.nextval, '마제소바');
+
+select * from t_food;
+
+
+/*음식 항목 번호 시퀀스*/
+ create sequence food_no_seq
+ start with 1
+ increment by 1
+ nocache;
+ 
+ /*가격 관련 테이블*/ 
+ create table t_price(
+  price_no number(38) primary key, --음식 항목 번호
+  price_won varchar2(50) not null, --음식명
+  price_food_no NUMBER(38) REFERENCES t_food(food_no) 
+ );     
+
+insert into t_price values (price_no_seq.nextval, 7000, 1);
+insert into t_price values (price_no_seq.nextval, 11000, 2);
+insert into t_price values (price_no_seq.nextval, 3500, 3);
+insert into t_price values (price_no_seq.nextval, 23000, 4);
+insert into t_price values (price_no_seq.nextval, 12000, 5);
+
+		SELECT *
+		FROM (
+		SELECT n.navi_no, r.restaurant_name, f.food_name, re.region_name,
+		p.photo_url,
+		t.type_name, ROWNUM AS rNum, l.like_cnt
+		FROM t_navi n
+		JOIN t_restaurant r ON n.navi_restaurant_no = r.restaurant_no
+		JOIN t_food f ON n.navi_food_no = f.food_no
+		JOIN t_region re ON n.navi_region_no = re.region_no
+		JOIN t_photo p ON n.navi_food_no = p.photo_food_no
+		JOIN t_type t ON n.navi_type_no = t.type_no
+		LEFT JOIN (
+		SELECT like_navi_no, COUNT(*) AS like_cnt
+		FROM t_like
+		GROUP BY like_navi_no
+		) l ON n.navi_no = l.like_navi_no
+		);
+
+/*가격 항목 번호 시퀀스*/
+ create sequence price_no_seq
+ start with 1
+ increment by 1
+ nocache;
+ 
+ 
+ --사진 항목 테이블
+  create table t_photo(
+  photo_no number(38) primary key, --사진 항목 번호
+  photo_name varchar2(50) not null, --사진명
+  photo_url varchar2(100),
+  photo_type varchar2(100),
+  photo_food_no NUMBER(38) REFERENCES t_food(food_no) 
+ );     
+ 
+ 
+ insert into t_photo values ( photo_no_seq.nextval, '사진이름1' ,'url1', 'type1' ,1 );
+  insert into t_photo values ( photo_no_seq.nextval, '사진이름2' ,'url2', 'type2' ,2 );
+   insert into t_photo values ( photo_no_seq.nextval, '사진이름3' ,'url3', 'type3' ,3 );
+    insert into t_photo values ( photo_no_seq.nextval, '사진이름4' ,'url4', 'type4' ,4 );
+     insert into t_photo values ( photo_no_seq.nextval, '사진이름5' ,'url5', 'type5' ,5 );
+ 
+ /*사진 항목 번호 시퀀스*/
+ create sequence photo_no_seq
+ start with 1
+ increment by 1
+ nocache;
+ 
+ /*식당 관련 테이블*/ 
+ create table t_restaurant(
+  restaurant_no number(38) primary key, --식당 항목 번호
+  restaurant_name varchar2(50) not null, --식당명
+  restaurant_review varchar2(4000)
+ );     
+ 
+   SELECT r.restaurant_name, f.food_name, re.region_name, p.photo_url, t.type_name, n.navi_no, r.restaurant_review
+  FROM t_navi n
+  JOIN t_restaurant r ON n.navi_restaurant_no = r.restaurant_no
+  JOIN t_food f ON n.navi_food_no = f.food_no
+  JOIN t_region re ON n.navi_region_no = re.region_no
+  JOIN t_photo p ON n.navi_food_no = p.photo_food_no
+  JOIN t_type t ON n.navi_type_no = t.type_no
+  WHERE navi_no = 1;
+ 
+ insert into t_restaurant values( restaurant_no_seq.nextval, '홍콩반점' , '가성비가 좋아요');
+ insert into t_restaurant values( restaurant_no_seq.nextval, '낭만쭈꾸미' , '너무 맛있어요');
+ insert into t_restaurant values( restaurant_no_seq.nextval, '노티드도넛' , '완전 최고에요');
+ insert into t_restaurant values( restaurant_no_seq.nextval, '목란' , '입에서 살살 녹아요');
+ insert into t_restaurant values( restaurant_no_seq.nextval, '칸다소바' , '못 먹어본 맛이에요');
+
+/*식당 항목 번호 시퀀스*/
+ create sequence restaurant_no_seq
+ start with 1
+ increment by 1
+ nocache;
+ 
+ 
+ 
+  /*지역 관련 테이블*/ 
+ create table t_region(
+  region_no number(38) primary key, --지역 항목 번호
+  region_name varchar2(50) not null --지역명
+ );     
+ 
+insert into t_region values ( region_no_seq.nextval, '서울');
+insert into t_region values ( region_no_seq.nextval, '인천'); 
+insert into t_region values ( region_no_seq.nextval, '대전'); 
+insert into t_region values ( region_no_seq.nextval, '경북'); 
+insert into t_region values ( region_no_seq.nextval, '전남'); 
+ 
+
+/*지역 항목 번호 시퀀스*/
+ create sequence region_no_seq
+ start with 1
+ increment by 1
+ nocache;
+
+
+/*타입 관련 테이블*/ 
+ create table t_type(
+  type_no number(38) primary key, --타입 항목 번호
+  type_name varchar2(50) not null --타입명
+ );     
+ 
+insert into t_type values (type_no_seq.nextval, '한식');
+insert into t_type values (type_no_seq.nextval, '중식');
+insert into t_type values (type_no_seq.nextval, '일식');
+insert into t_type values (type_no_seq.nextval, '양식');
+insert into t_type values (type_no_seq.nextval, '기타');
+insert into t_type values (type_no_seq.nextval, '디저트');
+
+/*타입 항목 번호 시퀀스*/
+ create sequence type_no_seq
+ start with 1
+ increment by 1
+ nocache;
+ 
+ /*댓글 관련 테이블*/ 
+ create table t_reply(
+  reply_no number(38) primary key, --댓글 항목 번호
+  reply_content varchar2(4000),  --댓글 내용
+  reply_cnt number(38),
+  reply_navi_no NUMBER(38) REFERENCES t_navi(navi_no) ,
+  reply_member_id varchar2(100) REFERENCES t_member(user_id) 
+ );     
+
+/*댓글 항목 번호 시퀀스*/
+ create sequence reply_no_seq
+ start with 1
+ increment by 1
+ nocache;
+
+
+-----------------------------------------------------------------------------------
+/*회원 관련 테이블*/ 
+create table t_member(   
+    user_id varchar2(100) primary key -- 회원 아이디
+   , user_pwd varchar2(100) NOT NULL -- 회원 비밀번호
+   , user_name varchar2(100) NOT NULL  -- 회원 이름
+   , user_birth varchar2(100)  -- 회원 생년월일
+   , user_email varchar2(100)  -- 회원 이메일
+   , user_phone varchar2(100)  -- 회원 휴대폰번호
+   , user_gender varchar2(100) --회원 성별
+);
+
+select * from t_member;
+
+ALTER TABLE t_member
+ADD user_state NUMBER(38) DEFAULT 0;
+
+update t_member set user_state=0 where user_id='hyein';
+commit;
+-----------------------------------------------------------------------------------
+/*찜 관련 테이블*/ 
+ create table t_like(
+  like_no NUMBER(38) PRIMARY KEY, -- 좋아요 시퀀스
+  like_cnt NUMBER(38), -- 좋아요 카운트
+  like_navi_no NUMBER(38) REFERENCES t_navi(navi_no),
+  like_member_id varchar2(300) REFERENCES t_member(user_id) 
+);
+
+
+select * from t_like;
+SELECT like_navi_no, COUNT(*)
+FROM t_like
+GROUP BY like_navi_no;
+
+/*찜 번호 시퀀스*/
+ create sequence like_no_seq
+ start with 1
+ increment by 1
+ nocache;
+ 
+ commit;
+ 
+ -----------------------------------------------------------------------------------
+/*댓글 테이블*/ 
+ CREATE TABLE t_comments (
+  comment_no NUMBER(38) PRIMARY KEY,
+  comment_navi_no NUMBER(38) REFERENCES t_navi(navi_no),
+  user_id varchar2(300) REFERENCES t_member(user_id),
+  contents VARCHAR2(400) not null,
+  comment_date date
+);
+
+insert into t_comments values(comment_no_seq.nextval, 2, 'haerin', '여기 매운맛 조절 가능해서 좋아요', sysdate);
+
+ create sequence comment_no_seq
+ start with 1
+ increment by 1
+ nocache;
+ select * from t_comments where comment_navi_no = 2;
+ 
+ select*from t_comments;
+ 
+SELECT comment_no, comment_navi_no, user_id, contents, comment_date, ROWNUM AS rNum
+FROM (SELECT *
+      FROM t_comments
+      WHERE comment_navi_no = 1
+      ORDER BY comment_no) -- 적절한 열을 기준으로 정렬
+WHERE ROWNUM >= 1 AND ROWNUM <= 3;
+
+select count(comment_no) from t_comments where comment_navi_no = 2;
+ 
+ delete from t_comments where user_id = 'haerin';
+
+rollback;
+ 
+ commit;

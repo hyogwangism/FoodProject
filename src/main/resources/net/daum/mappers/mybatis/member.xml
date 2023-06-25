@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="member">
+
+  	<!-- 회원가입 -->
+  	<insert id="member_join" parameterType="member">
+  		insert into t_member
+  		values (#{user_id}, #{user_pwd}, #{user_name}, #{user_birth}, #{user_email}, #{user_phone}, #{user_gender}, 0)
+  	</insert>
+  	
+  	<!-- 아이디 값 기준으로 회원정보 불러오기(로그인 체크)  -->
+  	<select id="member_login" resultType="member">
+  		select * from t_member where user_id = #{user_id}
+  	</select>
+  	
+  	<!-- 회원정보 수정 -->
+  	<update id="member_edit">
+  		update t_member 
+  		set 
+  		user_name = #{user_name}, user_gender= #{user_gender}
+  		, user_birth = #{user_birth}, user_email = #{user_email}
+  		, user_phone = #{user_phone}
+  		where user_id = #{user_id} 
+  	</update>
+
+	<!-- 비밀번호 수정 -->
+  	<update id="member_pwdEdit">
+  	  	update t_member 
+  		set user_pwd = #{user_pwd} where user_id = #{user_id} 
+  	</update>
+
+	<!-- 회원탈퇴 -->
+  	<update id="updateState">
+  	  	update t_member 
+  		set user_state = 1 where user_id = #{user_id} 
+  	</update>
+  	
+  	
+  	 <!-- 회원정보 불러오기(관리자 멤버 검색)  -->
+    <select id="member_search" resultType="member">
+     select * from t_member
+      <where>
+      <if test="search_type == 'All'">
+      user_id like #{search_field} or user_name like #{search_field} or user_gender like #{search_field} or
+	  user_birth like #{search_field} or user_email like #{search_field} or
+	  user_phone like #{search_field}
+      </if>
+      <if test="search_type == 'user_name'">
+       user_name like #{search_field}
+      </if>
+      <if test="search_type == 'user_gender'">
+       user_gender like #{search_field}
+      </if>
+      <if test="search_type == 'user_id'">
+       user_id like #{search_field}
+      </if>
+      <if test="search_type == 'user_birth'">
+       user_birth like #{search_field}
+      </if>
+      <if test="search_type == 'user_email'">
+       user_email like #{search_field}
+      </if>
+      <if test="search_type == 'user_phone'">
+       user_phone like #{search_field}
+      </if>
+      </where>
+    </select>  
+  	
+  	
+  </mapper>
